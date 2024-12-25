@@ -40,18 +40,19 @@ jobs:
         run: |
           git remote add upstream https://github.com/lobehub/lobe-chat.git
           git fetch upstream
+          git fetch origin
 
       # 同步上游更新到 main 分支
       - name: Sync main with upstream
         run: |
-          git checkout main
+          git checkout -B main origin/main
           git merge upstream/main --no-edit
           git push origin main
 
       # 合并 main 到 custom-dev 分支
       - name: Merge main to custom-dev
         run: |
-          git checkout custom-dev
+          git checkout -B custom-dev origin/custom-dev
           git merge main --no-edit
           git push origin custom-dev
 
