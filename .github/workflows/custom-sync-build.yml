@@ -1,0 +1,74 @@
+name: Custom Sync and Build
+
+on:
+  # 每天凌晨2点运行
+  schedule:
+    - cron: '0 2 * * *'
+  # 支持手动触发
+  workflow_dispatch:
+  # 当 custom-dev 分支有更新时触发
+  push:
+    branches:
+      - custom-dev
+
+jobs:
+  sync-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 配置 Git
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      # 添加上游仓库
+      - name: Add upstream repository
+        run: |
+          git remote add upstream https://github.com/lobehub/lobe-chat.git
+          git fetch upstream
+
+      # 同步上游更新到 main 分支
+      - name: Sync main with upstream
+        run: |
+          git checkout main
+          git merge upstream/main --no-edit
+          git push origin main
+
+      # 合并 main 到 custom-dev 分支
+      - name: Merge main to custom-dev
+        run: |
+          git checkout custom-dev
+          git merge main --no-edit
+          git push origin custom-dev
+
+      # 设置 QEMU 用于多架构构建
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 设置 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 登录到 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 构建并推送 Docker 镜像
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/lobe-chat:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/lobe-chat:${{ github.sha }} 
