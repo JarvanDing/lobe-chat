@@ -11,6 +11,12 @@ on:
     branches:
       - custom-dev
 
+# 添加权限配置
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
 jobs:
   sync-and-build:
     runs-on: ubuntu-latest
@@ -21,6 +27,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_TOKEN }}
+          persist-credentials: true
 
       # 配置 Git
       - name: Configure Git
